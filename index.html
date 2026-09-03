@@ -425,14 +425,14 @@
     <div class="card" style="--acc:#ffd54a">
       <h2>🔬 科研飞镖靶 <span class="tag-mini">Just for Fun</span></h2>
       <p class="note" style="margin:0 0 10px">
-        随机投出 3 支飞镖（落在红方），命中数字对应的科研 Topic 将拼出一个 Idea——纯娱乐，不计入榜单。左侧实战投镖后，也可以用真实镖位生成。
+        随机投出 3 支飞镖（落在红方），命中数字对应的科研 Topic 将拼出一个 Idea——纯娱乐，不计入榜单。
       </p>
       <button class="btn primary" id="btnThrow" style="width:100%">🎲 随机投 3 镖 + 生成 Idea</button>
       <div class="idea-src">
-        <span class="idea-src-label">或用左侧实战镖位生成</span>
+        <span class="idea-src-label">在左边的投镖游戏结束之后生成</span>
         <div class="idea-src-btns">
-          <button class="btn sm side-btn red" id="ideaRed">红方 3 镖 → Idea</button>
-          <button class="btn sm side-btn blue" id="ideaBlue">蓝方 3 镖 → Idea</button>
+          <button class="btn sm side-btn red" id="ideaRed">🔬 红方 3 镖 → Idea</button>
+          <button class="btn sm side-btn blue" id="ideaBlue">🔬 蓝方 3 镖 → Idea</button>
         </div>
       </div>
       <div class="idea-box" id="ideaBox" hidden>
@@ -893,6 +893,12 @@ function updateMarkPanel(){
   recB.disabled = bc === 0;
   recR.title = recB.title = isAuto ? "随机镖位不计入榜单" : "";
   document.getElementById("btnUndo").disabled = darts.length === 0 || isAuto;
+
+  // Idea 按钮：仅在左侧手动对局结束（6 镖投完）后可用
+  const gameDone = !isAuto && darts.length >= 6;
+  const ideaR = document.getElementById("ideaRed"), ideaB = document.getElementById("ideaBlue");
+  ideaR.disabled = ideaB.disabled = !gameDone;
+  ideaR.title = ideaB.title = gameDone ? "" : "左侧 6 镖对局结束后可用";
 }
 
 function wireMarking(){
