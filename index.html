@@ -377,6 +377,7 @@
       <div class="mark-actions">
         <button class="btn sm" id="btnUndo">↩ 撤销上一镖</button>
         <button class="btn sm danger" id="btnReset">重开一局</button>
+        <button class="btn sm" id="btnAuto">🎲 随机代投当前方</button>
       </div>
       <div class="link-row">
         <input id="markName" placeholder="玩家姓名（用于榜单）" maxlength="12" autocomplete="off">
@@ -407,9 +408,9 @@
     <div class="card">
       <h2>🔬 科研飞镖靶 <span class="tag-mini">Just for Fun</span></h2>
       <p class="note" style="margin:0 0 10px">
-        掷出 3 支飞镖，随机命中 3 个数字对应的科研 Topic（即上方可编辑的标签），拼出一个奇妙的科研 Idea；也可以用左侧标记的实战镖位来生成。
+        一键重开并随机投出红方 3 镖（真实落点、可撤销、可入榜），命中数字对应的科研 Topic 将拼出一个 Idea；也可以在左侧点击靶面实战投镖后，用「红 / 蓝方 3 镖 → 科研 Idea」生成。
       </p>
-      <button class="btn primary" id="btnThrow" style="width:100%">🎯 随机掷 3 镖，生成 Idea</button>
+      <button class="btn primary" id="btnThrow" style="width:100%">🎲 随机投 3 镖 + 生成 Idea</button>
       <div class="idea-box" id="ideaBox" hidden>
         <div class="hits" id="hits"></div>
         <div class="idea" id="ideaText"></div>
@@ -596,7 +597,6 @@ function buildBoard(){
     </g>`);
   });
 
-  s.push(`<g id="dartLayer"></g>`); // 随机掷镖标记层
   s.push(`<g id="markLayer"></g>`); // 手动标记红蓝飞镖层（最上层）
 
   document.getElementById("board").innerHTML = s.join("");
@@ -732,34 +732,6 @@ function showIdea(nums){
   box.scrollIntoView({behavior:"smooth", block:"nearest"});
 }
 
-/** 随机掷 3 镖（画 📌 标记 + 生成 Idea） */
-function throwDarts(){
-  const pool = [...NUMBERS];
-  const picks = [];
-  for (let i = 0; i < 3; i++){
-    picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-  }
-
-  const layer = document.getElementById("dartLayer");
-  layer.innerHTML = picks.map((n, i) => {
-    const idx = NUMBERS.indexOf(n);
-    const ang = -90 + idx * 18 + (Math.random() * 14 - 7);   // 扇区中心 ±7°
-    // 落点随机取内单区 [bullOut+12, trpIn-12] 或外单区 [trpOut+12, dblIn-12]
-    const rOut = Math.random() < 0.5
-      ? R.bullOut + 12 + Math.random() * (R.trpIn - R.bullOut - 24)
-      : R.trpOut  + 12 + Math.random() * (R.dblIn - R.trpOut - 24);
-    const [x, y] = pt(rOut, ang);
-    return `<g transform="translate(${f(x)},${f(y)})">
-      <g class="dart" style="animation-delay:${i * 0.18}s">
-        <circle r="17" fill="rgba(0,0,0,.32)"/>
-        <text y="1" font-size="24" text-anchor="middle" dominant-baseline="central">📌</text>
-      </g>
-    </g>`;
-  }).join("");
-
-  showIdea(picks);
-}
-
 /* ================= 掷镖标记（红蓝双方各 3 镖） ================= */
 let darts = [];  // [{side, x, y, n, zone, mult, score, miss?, bull?}]
 
@@ -773,6 +745,51 @@ function nextSide(){
   return darts.length % 2 === 0 ? "red" : "blue";
 }
 
+/** 统一入口：为当前出手方放置一镖（点击与随机代投共用） */
+function placeDart(x, y, side = nextSide()){
+  if (darts.length >= 6) return false;
+  darts.push({ side, x, y, ...locate(x, y) });
+  renderMarks();
+  updateMarkPanel();
+  return true;
+}
+
+/** 随机落点：~8% 脱靶、~8% 牛眼，其余均匀分布在计分扇区 */
+function randomDartPos(){
+  const roll = Math.random();
+  if (roll < 0.08) return pt(R.dblOut + 15 + Math.random() * 55, Math.random() * 360);
+  if (roll < 0.16) return pt(Math.random() * (R.bullOut - 4), Math.random() * 360);
+  const ang = -90 + Math.floor(Math.random() * 20) * 18 + (Math.random() * 15 - 7.5);
+  return pt(R.bullOut + 4 + Math.random() * (R.dblOut - R.bullOut - 8), ang);
+}
+
+/** 随机代投：把当前出手方剩余的镖投完，返回该方；无法投掷返回 null */
+function autoThrowSide(){
+  const side = nextSide();
+  if (sideDarts(side).length >= 3 || darts.length >= 6){
+    toast("本局已投完，点「重开一局」再来");
+    return null;
+  }
+  while (sideDarts(side).length < 3){
+    const [x, y] = randomDartPos();
+    placeDart(x, y, side);   // 固定为当前出手方，不走交替
+  }
+  return side;
+}
+
+/** 用某方已命中的数字生成科研 Idea（不足 3 个随机补齐） */
+function ideaFromSide(side){
+  const nums = [...new Set(sideDarts(side).filter(d => d.mult > 0).map(d => d.n))];
+  if (!nums.length){
+    toast(`${SIDES[side].label}还没有命中计分扇区（单/双/三倍区）`);
+    return;
+  }
+  const pool = NUMBERS.filter(n => !nums.includes(n));
+  while (nums.length < 3) nums.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  showIdea(nums.slice(0, 3));
+}
+
+
 function zoneLabel(d){
   if (d.miss) return "脱靶";
   if (d.bull) return d.zone;
@@ -784,7 +801,7 @@ function renderMarks(){
   layer.innerHTML = darts.map(d => {
     const idx = sideDarts(d.side).indexOf(d) + 1;
     return `<g transform="translate(${f(d.x)},${f(d.y)})">
-      <g class="dart">
+      <g class="dart" style="animation-delay:${darts.indexOf(d) * 0.12}s">
         <circle r="16" fill="${SIDES[d.side].color}" stroke="#fff" stroke-width="2.5"/>
         <text y="1" font-size="15" font-weight="700" fill="#fff"
               text-anchor="middle" dominant-baseline="central">${idx}</text>
@@ -835,17 +852,10 @@ function wireMarking(){
   // 统一点击处理：标记模式 → 放镖；否则点击数字 → 编辑标签
   svgEl.addEventListener("click", e => {
     if (modeCb.checked){
-      if (darts.length >= 6){
-        toast("本局 6 镖已投完，点「重开一局」再来");
-        return;
-      }
       const rect = svgEl.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width  * 1000;
       const y = (e.clientY - rect.top)  / rect.height * 1000;
-      const side = nextSide();
-      darts.push({ side, x, y, ...locate(x, y) });
-      renderMarks();
-      updateMarkPanel();
+      if (!placeDart(x, y)) toast("本局 6 镖已投完，点「重开一局」再来");
       return;
     }
     const g = e.target.closest(".num");
@@ -874,20 +884,13 @@ function wireMarking(){
     });
   }
 
+  // 随机代投当前方（连点两次可模拟完整一局）
+  document.getElementById("btnAuto").addEventListener("click", () => autoThrowSide());
+
   // 联动 2：用实战镖位生成科研 Idea
   for (const side of ["red", "blue"]){
-    document.getElementById(side === "red" ? "ideaRed" : "ideaBlue").addEventListener("click", () => {
-      const nums = [...new Set(sideDarts(side).filter(d => d.mult > 0).map(d => d.n))];
-      if (!nums.length){
-        toast(`${SIDES[side].label}还没有命中计分扇区（单/双/三倍区）`);
-        return;
-      }
-      const pool = NUMBERS.filter(n => !nums.includes(n));
-      while (nums.length < 3){
-        nums.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
-      }
-      showIdea(nums.slice(0, 3));
-    });
+    document.getElementById(side === "red" ? "ideaRed" : "ideaBlue")
+      .addEventListener("click", () => ideaFromSide(side));
   }
 
   updateMarkPanel();
@@ -1038,7 +1041,13 @@ loadLB();
 renderLB();
 wireLB();
 wireMarking();
-document.getElementById("btnThrow").addEventListener("click", throwDarts);
+document.getElementById("btnThrow").addEventListener("click", () => {
+  darts = [];                  // 新的一局
+  renderMarks();
+  updateMarkPanel();
+  const side = autoThrowSide(); // 红方随机 3 镖
+  if (side) ideaFromSide(side);
+});
 </script>
 </body>
 </html>
