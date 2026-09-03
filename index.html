@@ -75,7 +75,7 @@
   }
   svg.board.marking{cursor:crosshair}
   svg.board.marking .num{cursor:crosshair}
-  .side-col{flex:0 0 420px;display:flex;flex-direction:column;gap:16px;animation:rise .55s .16s ease both}
+  .side-col{flex:0 0 420px;display:flex;flex-direction:column;gap:20px;animation:rise .55s .16s ease both}
 
   /* SVG 内部元素 */
   .wedge{stroke:#0b0d10;stroke-width:3;stroke-linejoin:round}
@@ -106,7 +106,7 @@
     position:relative;overflow:hidden;
     background:rgba(255,255,255,.045);
     border:1px solid rgba(255,255,255,.10);
-    border-radius:16px;padding:18px 20px;
+    border-radius:16px;padding:20px 22px;
     box-shadow:0 8px 24px rgba(0,0,0,.28);
     transition:border-color .2s;
   }
@@ -132,7 +132,7 @@
   }
   .card-foot{
     display:flex;align-items:center;justify-content:space-between;gap:10px;
-    margin-top:14px;flex-wrap:wrap;
+    margin-top:16px;flex-wrap:wrap;
   }
   .foot-btns{display:flex;gap:8px}
   .card-foot .stat{font-size:11.5px;color:#8b96a3}
@@ -141,7 +141,9 @@
   .btn{
     appearance:none;border:1px solid rgba(255,255,255,.15);
     background:rgba(255,255,255,.07);color:#e8ecf1;
-    padding:7px 16px;border-radius:999px;font-size:13px;font-weight:500;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;
+    min-height:34px;padding:6px 18px;border-radius:999px;
+    font-size:13px;font-weight:500;cursor:pointer;
     box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
     transition:background .15s,border-color .15s,transform .15s,box-shadow .15s;
   }
@@ -155,7 +157,7 @@
   }
   .btn.primary:hover{background:linear-gradient(180deg,#4aa3e6,#2f82c9);box-shadow:0 6px 20px rgba(46,134,201,.45)}
   .btn.danger:hover{background:rgba(220,60,50,.22);border-color:rgba(220,60,50,.5)}
-  .btn.sm{padding:5px 13px;font-size:12px}
+  .btn.sm{min-height:32px;padding:4px 15px;font-size:12.5px}
   .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
   .btn:disabled:hover{background:rgba(255,255,255,.07)}
 
@@ -198,9 +200,9 @@
   .mark-actions{display:flex;gap:8px;margin:12px 0 2px}
   .link-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
   .link-row input{
-    flex:1 1 120px;min-width:0;
+    flex:1 1 120px;min-width:0;min-height:34px;
     background:rgba(0,0,0,.30);border:1px solid rgba(255,255,255,.14);
-    border-radius:9px;padding:7px 11px;color:#eef1f5;font-size:12.5px;
+    border-radius:9px;padding:6px 11px;color:#eef1f5;font-size:12.5px;
     font-family:inherit;outline:0;transition:border-color .15s,box-shadow .15s;
   }
   .link-row input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,134,201,.22)}
@@ -257,17 +259,15 @@
   /* ---------- 底部：规则玩法 + 榜单 ---------- */
   .panels{
     display:grid;grid-template-columns:minmax(340px,5fr) 7fr;gap:20px;
-    width:100%;max-width:1120px;margin-top:28px;align-items:start;
+    width:100%;max-width:1120px;margin-top:28px;align-items:stretch;
     animation:rise .55s .24s ease both;
   }
 
-  .rules{list-style:none}
+  .rules{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:2px 20px}
   .rules li{
     display:flex;gap:10px;align-items:center;
-    padding:8px 0;font-size:13px;color:#cdd5df;
-    border-bottom:1px dashed rgba(255,255,255,.08);
+    padding:7px 0;font-size:13px;color:#cdd5df;
   }
-  .rules li:last-child{border-bottom:0}
   .rchip{
     flex:none;width:46px;height:24px;border-radius:6px;
     display:grid;place-items:center;
@@ -278,7 +278,7 @@
   .rules b{color:#eef1f5}
   .note{margin-top:10px;font-size:12px;color:#8b96a3;line-height:1.7}
 
-  .games{list-style:none;display:flex;flex-direction:column;gap:12px}
+  .games{list-style:none;display:flex;flex-direction:column;gap:10px}
   .games li{
     font-size:12.5px;color:#aeb8c4;line-height:1.7;
     border-left:2px solid rgba(46,134,201,.4);padding-left:11px;
@@ -289,8 +289,9 @@
   /* ---------- 积分榜单 ---------- */
   .lb-form{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
   .lb-form input{
+    min-height:34px;
     background:rgba(0,0,0,.30);border:1px solid rgba(255,255,255,.14);
-    border-radius:9px;padding:7px 11px;color:#eef1f5;
+    border-radius:9px;padding:6px 11px;color:#eef1f5;
     font-size:13px;font-family:inherit;outline:0;
     transition:border-color .15s,box-shadow .15s;
   }
@@ -324,7 +325,7 @@
     font-size:13px;padding:2px 6px;border-radius:6px;
   }
   .x:hover{color:#ff6b5e;background:rgba(220,60,50,.15)}
-  .empty td{text-align:center;color:#6b7684;padding:22px 0;font-size:12.5px}
+  .empty td{text-align:center;color:#6b7684;padding:30px 0;font-size:12.5px}
 
   footer{margin-top:34px;font-size:12px;color:#6f7a88;text-align:center;letter-spacing:.03em}
   footer a{color:#8fb4d8;text-decoration:none}
@@ -346,6 +347,10 @@
     .board-col{width:min(94vw,640px);flex:none}
     .side-col{flex:none;width:min(94vw,640px)}
     .panels{grid-template-columns:1fr}
+  }
+  @media (max-width:560px){
+    .rules{grid-template-columns:1fr}
+    .foot-btns{width:100%;justify-content:flex-end}
   }
 </style>
 </head>
@@ -461,7 +466,7 @@
     </ul>
   </div>
 
-  <div class="card" style="--acc:#ffd54a">
+  <div class="card" style="--acc:#ffd54a;display:flex;flex-direction:column">
     <h2>🏆 积分榜单</h2>
     <form class="lb-form" id="lbForm">
       <input id="lbName" placeholder="玩家姓名" maxlength="12" autocomplete="off" required>
@@ -474,7 +479,7 @@
       </thead>
       <tbody id="lbBody"></tbody>
     </table>
-    <div class="card-foot">
+    <div class="card-foot" style="margin-top:auto">
       <span class="stat" id="lbStatus"></span>
       <span class="foot-btns">
         <button class="btn sm" id="lbExport">导出 JSON</button>
