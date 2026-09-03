@@ -449,10 +449,10 @@
     <ul class="rules">
       <li><span class="rchip" style="background:linear-gradient(90deg,#efe9da 50%,#2e86c9 50%)">单区</span>
           <div><b>单区 ×1</b>：内 / 外两个大扇区，按所在数字计分</div></li>
-      <li><span class="rchip" style="background:#c0392b">×2</span>
-          <div><b>双倍区</b>：最外圈红色细环，扇区数字 ×2</div></li>
-      <li><span class="rchip" style="background:#a93226">×3</span>
-          <div><b>三倍区</b>：中段红色细环，扇区数字 ×3（单镖最高 60 分）</div></li>
+      <li><span class="rchip" style="background:linear-gradient(90deg,#c0392b 50%,#efe9da 50%)">×2</span>
+          <div><b>双倍区</b>：最外圈红白相间细环，扇区数字 ×2</div></li>
+      <li><span class="rchip" style="background:linear-gradient(90deg,#c0392b 50%,#efe9da 50%)">×3</span>
+          <div><b>三倍区</b>：中段红白相间细环，扇区数字 ×3（单镖最高 60 分）</div></li>
       <li><span class="rchip" style="background:#2e86c9">25</span>
           <div><b>外牛眼</b>：蓝色圆环，固定 25 分</div></li>
       <li><span class="rchip" style="background:#c0392b">50</span>
@@ -595,9 +595,10 @@ function buildBoard(){
   for (let i = 0; i < 20; i++){
     const a1 = -90 + i*18 - 9, a2 = -90 + i*18 + 9;
     const single = i % 2 === 0 ? COLORS.cream : COLORS.blue;
+    const ring   = i % 2 === 0 ? COLORS.red   : COLORS.cream;  // 细环红白相间，与本区单区色相反
     s.push(`<path class="wedge" d="${wedge(R.dblIn,  R.trpOut, a1, a2)}" fill="${single}"/>`);
-    s.push(`<path class="wedge" d="${wedge(R.dblOut, R.dblIn,  a1, a2)}" fill="${COLORS.red}"/>`);
-    s.push(`<path class="wedge" d="${wedge(R.trpOut, R.trpIn,  a1, a2)}" fill="${COLORS.red}"/>`);
+    s.push(`<path class="wedge" d="${wedge(R.dblOut, R.dblIn,  a1, a2)}" fill="${ring}"/>`);
+    s.push(`<path class="wedge" d="${wedge(R.trpOut, R.trpIn,  a1, a2)}" fill="${ring}"/>`);
     s.push(`<path class="wedge" d="${wedge(R.trpIn,  R.bullOut,a1, a2)}" fill="${single}"/>`);
   }
 
