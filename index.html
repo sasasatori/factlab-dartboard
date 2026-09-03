@@ -416,7 +416,7 @@
         <span class="stat" id="status"></span>
         <span class="foot-btns">
           <button class="btn sm" id="btnExport">导出 JSON</button>
-          <button class="btn sm danger" id="btnClear">清空</button>
+          <button class="btn sm danger" id="btnClear">恢复默认</button>
           <button class="btn sm primary" id="btnSave">保存</button>
         </span>
       </div>
@@ -675,11 +675,12 @@ function saveTags(){
 function loadTags(){
   let obj = null;
   try { obj = JSON.parse(localStorage.getItem(TAG_KEY) || "null"); } catch(e) {}
-  if (obj){
+  // 无存档，或存档全为空（曾点过「清空」）→ 载入默认 Topic
+  if (obj && Object.values(obj).some(v => v && v.trim())){
     applyTags(obj);
     setStatus("已加载本地保存的标签", false);
   } else {
-    applyTags(DEFAULT_TOPICS); // 首次：载入默认科研 Topic（未保存，可编辑后保存）
+    applyTags(DEFAULT_TOPICS);
     setStatus("已载入默认科研 Topic，可自由编辑", false);
   }
 }
@@ -706,8 +707,8 @@ function wireTags(){
   });
 
   document.getElementById("btnClear").addEventListener("click", () => {
-    if (!confirm("确定清空全部 20 个标签并保存吗？")) return;
-    applyTags({});
+    if (!confirm("确定把全部标签恢复为默认科研 Topic 吗？（会覆盖当前内容）")) return;
+    applyTags(DEFAULT_TOPICS);
     saveTags();
   });
 
