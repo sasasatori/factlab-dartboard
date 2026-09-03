@@ -594,8 +594,8 @@ function buildBoard(){
 
   for (let i = 0; i < 20; i++){
     const a1 = -90 + i*18 - 9, a2 = -90 + i*18 + 9;
-    const single = i % 2 === 0 ? COLORS.cream : COLORS.blue;
-    const ring   = i % 2 === 0 ? COLORS.red   : COLORS.cream;  // 细环红白相间，与本区单区色相反
+    const single = i % 2 === 0 ? COLORS.blue : COLORS.cream;
+    const ring   = i % 2 === 0 ? COLORS.cream : COLORS.red;  // 细环红白相间，与本区单区色相反
     s.push(`<path class="wedge" d="${wedge(R.dblIn,  R.trpOut, a1, a2)}" fill="${single}"/>`);
     s.push(`<path class="wedge" d="${wedge(R.dblOut, R.dblIn,  a1, a2)}" fill="${ring}"/>`);
     s.push(`<path class="wedge" d="${wedge(R.trpOut, R.trpIn,  a1, a2)}" fill="${ring}"/>`);
