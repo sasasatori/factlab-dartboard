@@ -102,13 +102,20 @@
 
   /* ---------- 卡片通用 ---------- */
   .card{
-    background:linear-gradient(165deg, rgba(255,255,255,.07), rgba(255,255,255,.028));
-    border:1px solid var(--line);
-    border-radius:18px;padding:18px 20px;
-    box-shadow:0 10px 30px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.07);
+    --acc: var(--blue);
+    position:relative;overflow:hidden;
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.10);
+    border-radius:16px;padding:18px 20px;
+    box-shadow:0 8px 24px rgba(0,0,0,.28);
     transition:border-color .2s;
   }
-  .card:hover{border-color:rgba(255,255,255,.19)}
+  .card::before{
+    content:"";position:absolute;top:0;left:8%;right:8%;height:1px;
+    background:linear-gradient(90deg,transparent,var(--acc),transparent);
+    opacity:.55;pointer-events:none;
+  }
+  .card:hover{border-color:rgba(255,255,255,.17)}
   .card h2{
     position:relative;font-size:15px;font-weight:700;letter-spacing:.02em;color:#f2f5f8;
     margin-bottom:14px;padding-bottom:10px;display:flex;align-items:center;gap:8px;
@@ -116,7 +123,7 @@
   .card h2::after{
     content:"";position:absolute;left:0;bottom:0;
     width:36px;height:2px;border-radius:2px;
-    background:linear-gradient(90deg,var(--blue),transparent);
+    background:linear-gradient(90deg,var(--acc),transparent);
   }
   .tag-mini{
     font-size:10.5px;font-weight:400;color:#93a0ae;
@@ -210,6 +217,7 @@
   .tag-row:hover{border-color:rgba(255,255,255,.30);transform:translateY(-1px)}
   .tag-row:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,134,201,.28);transform:none}
   .tag-row.dirty{border-color:var(--accent)}
+  .tag-row.hl{border-color:var(--accent);background:rgba(255,213,74,.08)}
   .tag-row.flash{animation:flash .7s ease-out}
   @keyframes flash{
     0%{box-shadow:0 0 0 0 rgba(255,213,74,.85)}
@@ -358,7 +366,7 @@
       <svg class="board marking" id="board" viewBox="0 0 1000 1000" aria-label="飞镖靶"></svg>
     </div>
 
-    <div class="card" style="margin-top:18px">
+    <div class="card" style="margin-top:18px;--acc:#e74c3c">
       <h2>🎯 掷镖标记 <span class="tag-mini">红 / 蓝双方各 3 镖</span></h2>
       <label class="mode-line">
         <input type="checkbox" id="markMode" checked>
@@ -401,7 +409,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" style="--acc:#ffd54a">
       <h2>🔬 科研飞镖靶 <span class="tag-mini">Just for Fun</span></h2>
       <p class="note" style="margin:0 0 10px">
         随机投出 3 支飞镖（落在红方），命中数字对应的科研 Topic 将拼出一个 Idea——纯娱乐，不计入榜单。左侧实战投镖后，也可以用真实镖位生成。
@@ -453,7 +461,7 @@
     </ul>
   </div>
 
-  <div class="card">
+  <div class="card" style="--acc:#ffd54a">
     <h2>🏆 积分榜单</h2>
     <form class="lb-form" id="lbForm">
       <input id="lbName" placeholder="玩家姓名" maxlength="12" autocomplete="off" required>
@@ -591,7 +599,6 @@ function buildBoard(){
   NUMBERS.forEach((n, i) => {
     const [x,y] = pt(R.num, -90 + i*18);
     s.push(`<g class="num" data-n="${n}">
-      <title>点击编辑 ${n} 的标签</title>
       <circle class="pod" cx="${f(x)}" cy="${f(y)}" r="34"/>
       <text class="numtxt" x="${f(x)}" y="${f(y+2)}">${n}</text>
     </g>`);
@@ -701,6 +708,13 @@ function wireTags(){
     const g = document.querySelector(`.num[data-n="${row.dataset.n}"]`);
     row.addEventListener("mouseenter", () => g && g.classList.add("hl"));
     row.addEventListener("mouseleave", () => g && g.classList.remove("hl"));
+  });
+
+  // 悬停盘面数字 ↔ 高亮右侧标签行
+  document.querySelectorAll(".num").forEach(g => {
+    const row = document.querySelector(`.tag-row[data-n="${g.dataset.n}"]`);
+    g.addEventListener("mouseenter", () => row && row.classList.add("hl"));
+    g.addEventListener("mouseleave", () => row && row.classList.remove("hl"));
   });
 }
 
@@ -828,18 +842,21 @@ function renderMarks(){
 }
 
 function updateMarkPanel(){
-  const rc = sideDarts("red").length, bc = sideDarts("blue").length;
+  const isAuto = darts.length > 0 && darts[0].origin === "auto";
+  const rc = isAuto ? 0 : sideDarts("red").length;
+  const bc = isAuto ? 0 : sideDarts("blue").length;
 
+  // 随机镖不进入计分行：面板保持空闲态
   for (const side of ["red", "blue"]){
+    const list = isAuto ? [] : sideDarts(side);
     document.getElementById(side + "Darts").innerHTML =
-      sideDarts(side).map(d =>
+      list.map(d =>
         `<span class="dchip ${side}" title="${d.zone}">${zoneLabel(d)} <b>${d.score}</b></span>`
       ).join("") || `<span class="none">—</span>`;
-    document.getElementById(side + "Total").textContent = sideTotal(side);
+    document.getElementById(side + "Total").textContent = isAuto ? 0 : sideTotal(side);
   }
 
   const tl = document.getElementById("turnLine");
-  const isAuto = darts.length > 0 && darts[0].origin === "auto";
   if (isAuto){
     tl.innerHTML = `🎲 随机镖位 · 纯娱乐，不计入榜单；点击靶面将清除并开始手动新的一局`;
   } else if (darts.length >= 6){
@@ -854,12 +871,12 @@ function updateMarkPanel(){
   }
 
   const recR = document.getElementById("recRed"), recB = document.getElementById("recBlue");
-  recR.textContent = `红方 ${sideTotal("red")} 分 → 榜单`;
-  recB.textContent = `蓝方 ${sideTotal("blue")} 分 → 榜单`;
-  recR.disabled = rc === 0 || isAuto;
-  recB.disabled = bc === 0 || isAuto;
+  recR.textContent = isAuto ? "红方 → 榜单" : `红方 ${sideTotal("red")} 分 → 榜单`;
+  recB.textContent = isAuto ? "蓝方 → 榜单" : `蓝方 ${sideTotal("blue")} 分 → 榜单`;
+  recR.disabled = rc === 0;
+  recB.disabled = bc === 0;
   recR.title = recB.title = isAuto ? "随机镖位不计入榜单" : "";
-  document.getElementById("btnUndo").disabled = darts.length === 0;
+  document.getElementById("btnUndo").disabled = darts.length === 0 || isAuto;
 }
 
 function wireMarking(){
