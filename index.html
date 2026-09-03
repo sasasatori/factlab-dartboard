@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FACT-Lab，数字飞镖靶</title>
+<link rel="icon" type="image/png" href="fact-icon.png">
+<style>
+  :root{
+    --blue:#2e86c9; --cream:#efe9da; --red:#c0392b;
+    --accent:#ffd54a;
+    --side-red:#e74c3c; --side-blue:#3498db;
+    --line:rgba(255,255,255,.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  ::selection{background:rgba(46,134,201,.4)}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.13);border-radius:8px;border:2px solid #10141a}
+  ::-webkit-scrollbar-track{background:transparent}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1000px 600px at 18% -8%, rgba(46,134,201,.16), transparent 60%),
+      radial-gradient(900px 620px at 85% -6%, rgba(192,57,43,.10), transparent 55%),
+      radial-gradient(1400px 900px at 50% 115%, rgba(46,134,201,.07), transparent 60%),
+      linear-gradient(180deg,#1a2027,#10141a 55%,#0b0e12);
+    color:#e8ecf1;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;
+    display:flex;flex-direction:column;align-items:center;
+    padding:28px 16px 52px;
+  }
+  @keyframes rise{0%{opacity:0;transform:translateY(14px)}100%{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none!important;transition:none!important}
+  }
+
+  /* ---------- 头部 / Logo ---------- */
+  header{text-align:center;margin-bottom:24px;animation:rise .5s ease both}
+  .brand{
+    display:inline-flex;background:linear-gradient(180deg,#ffffff,#eef2f6);
+    border-radius:16px;padding:12px 26px;
+    box-shadow:0 12px 28px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.9);
+    margin-bottom:18px;transition:transform .18s, box-shadow .18s;
+  }
+  .brand:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(0,0,0,.55)}
+  .brand img{height:48px;width:auto;display:block}
+  h1{
+    font-size:24px;font-weight:800;letter-spacing:.05em;
+    display:flex;align-items:center;justify-content:center;gap:11px;
+    background:linear-gradient(92deg,#ffffff 30%,#a8d3f5);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .cube{width:32px;height:32px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.45)}
+  .hint{
+    display:inline-block;margin-top:11px;font-size:12.5px;color:#aeb9c6;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.10);
+    border-radius:999px;padding:6px 18px;line-height:1.6;
+  }
+
+  /* ---------- 主布局：靶盘 + 侧栏 ---------- */
+  .layout{
+    display:flex;gap:24px;align-items:flex-start;justify-content:center;
+    width:100%;max-width:1120px;
+  }
+  .board-col{flex:1 1 620px;max-width:640px;min-width:0;animation:rise .55s .08s ease both}
+  .board-wrap{position:relative;width:100%;aspect-ratio:1/1}
+  .board-glow{
+    position:absolute;inset:-8%;border-radius:50%;pointer-events:none;
+    background:radial-gradient(circle at 50% 42%, rgba(46,134,201,.22), rgba(192,57,43,.07) 45%, transparent 68%);
+    filter:blur(28px);
+  }
+  svg.board{
+    position:absolute;inset:0;width:100%;height:100%;z-index:1;
+    filter:drop-shadow(0 24px 38px rgba(0,0,0,.65));
+  }
+  svg.board.marking{cursor:crosshair}
+  svg.board.marking .num{cursor:crosshair}
+  .side-col{flex:0 0 420px;display:flex;flex-direction:column;gap:16px;animation:rise .55s .16s ease both}
+
+  /* SVG 内部元素 */
+  .wedge{stroke:#0b0d10;stroke-width:3;stroke-linejoin:round}
+  .bull{stroke:#0b0d10;stroke-width:3}
+  .pod{fill:rgba(255,255,255,.05);stroke:rgba(255,255,255,.10);stroke-width:1.5;
+       transition:fill .15s,stroke .15s}
+  .num{cursor:pointer}
+  .num:hover .pod,.num.hl .pod{fill:rgba(255,213,74,.20);stroke:rgba(255,213,74,.85)}
+  .numtxt{
+    fill:#f4f6f8;font-size:40px;font-weight:700;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    text-anchor:middle;dominant-baseline:central;pointer-events:none;
+    paint-order:stroke;stroke:rgba(0,0,0,.45);stroke-width:2;
+  }
+  .dart{
+    transform-box:fill-box;transform-origin:center;
+    animation:dartIn .35s cubic-bezier(.2,1.6,.4,1) both;
+  }
+  @keyframes dartIn{
+    0%{opacity:0;transform:scale(2.4)}
+    100%{opacity:1;transform:scale(1)}
+  }
+
+  /* ---------- 卡片通用 ---------- */
+  .card{
+    background:linear-gradient(165deg, rgba(255,255,255,.07), rgba(255,255,255,.028));
+    border:1px solid var(--line);
+    border-radius:18px;padding:18px 20px;
+    box-shadow:0 10px 30px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.07);
+    transition:border-color .2s;
+  }
+  .card:hover{border-color:rgba(255,255,255,.19)}
+  .card h2{
+    position:relative;font-size:15px;font-weight:700;letter-spacing:.02em;color:#f2f5f8;
+    margin-bottom:14px;padding-bottom:10px;display:flex;align-items:center;gap:8px;
+  }
+  .card h2::after{
+    content:"";position:absolute;left:0;bottom:0;
+    width:36px;height:2px;border-radius:2px;
+    background:linear-gradient(90deg,var(--blue),transparent);
+  }
+  .tag-mini{
+    font-size:10.5px;font-weight:400;color:#93a0ae;
+    border:1px solid rgba(255,255,255,.20);border-radius:999px;padding:1px 8px;
+    background:rgba(255,255,255,.04);
+  }
+  .card-foot{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    margin-top:14px;flex-wrap:wrap;
+  }
+  .foot-btns{display:flex;gap:8px}
+  .card-foot .stat{font-size:11.5px;color:#8b96a3}
+  .card-foot .stat.dirty{color:var(--accent)}
+
+  .btn{
+    appearance:none;border:1px solid rgba(255,255,255,.15);
+    background:rgba(255,255,255,.07);color:#e8ecf1;
+    padding:7px 16px;border-radius:999px;font-size:13px;font-weight:500;cursor:pointer;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    transition:background .15s,border-color .15s,transform .15s,box-shadow .15s;
+  }
+  .btn:hover{background:rgba(255,255,255,.13);transform:translateY(-1px)}
+  .btn:active{transform:translateY(0)}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .btn.primary{
+    background:linear-gradient(180deg,#3d97db,#2874b8);
+    border-color:transparent;font-weight:600;
+    box-shadow:0 4px 14px rgba(46,134,201,.35);
+  }
+  .btn.primary:hover{background:linear-gradient(180deg,#4aa3e6,#2f82c9);box-shadow:0 6px 20px rgba(46,134,201,.45)}
+  .btn.danger:hover{background:rgba(220,60,50,.22);border-color:rgba(220,60,50,.5)}
+  .btn.sm{padding:5px 13px;font-size:12px}
+  .btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+  .btn:disabled:hover{background:rgba(255,255,255,.07)}
+
+  /* ---------- 掷镖标记 ---------- */
+  .mode-line{
+    display:flex;align-items:center;gap:8px;cursor:pointer;
+    font-size:12.5px;color:#aeb8c4;margin-bottom:12px;
+  }
+  .mode-line input{accent-color:var(--blue);width:15px;height:15px}
+  .turn-line{
+    font-size:13px;margin-bottom:10px;min-height:20px;
+    display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+    background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;padding:8px 12px;
+  }
+  .win{color:var(--accent)}
+  .side-dot{width:12px;height:12px;border-radius:50%;display:inline-block;vertical-align:-1px}
+  .side-dot.red{background:var(--side-red)}
+  .side-dot.blue{background:var(--side-blue)}
+  .dots{display:inline-flex;gap:4px;margin-left:2px}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 1px 3px rgba(0,0,0,.5)}
+  .dot.red{background:var(--side-red)}
+  .dot.blue{background:var(--side-blue)}
+  .side-row{
+    display:flex;align-items:center;gap:8px;
+    padding:7px 8px;font-size:13px;border-radius:10px;
+    border-bottom:1px dashed rgba(255,255,255,.08);
+    transition:background .15s;
+  }
+  .side-row:hover{background:rgba(255,255,255,.03)}
+  .side-row:last-of-type{border-bottom:0}
+  .side-row>b{min-width:30px}
+  .side-darts{flex:1;display:flex;flex-wrap:wrap;gap:5px;min-height:22px}
+  .dchip{border-radius:999px;padding:2px 9px;font-size:12px;border:1px solid}
+  .dchip.red{background:rgba(231,76,60,.16);border-color:rgba(231,76,60,.55)}
+  .dchip.blue{background:rgba(52,152,219,.16);border-color:rgba(52,152,219,.55)}
+  .dchip b{color:#fff}
+  .none{color:#5d6875;font-size:12px}
+  .side-total{font-weight:800;font-size:16px;min-width:36px;text-align:right}
+  .mark-actions{display:flex;gap:8px;margin:12px 0 2px}
+  .link-row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+  .link-row input{
+    flex:1 1 120px;min-width:0;
+    background:rgba(0,0,0,.30);border:1px solid rgba(255,255,255,.14);
+    border-radius:9px;padding:7px 11px;color:#eef1f5;font-size:12.5px;
+    font-family:inherit;outline:0;transition:border-color .15s,box-shadow .15s;
+  }
+  .link-row input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,134,201,.22)}
+
+  /* ---------- 数字标签面板 ---------- */
+  .tag-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .tag-row{
+    display:flex;align-items:center;gap:7px;
+    background:rgba(0,0,0,.24);
+    border:1px solid rgba(255,255,255,.11);
+    border-radius:10px;padding:5px 9px 5px 5px;
+    transition:border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .tag-row:hover{border-color:rgba(255,255,255,.30);transform:translateY(-1px)}
+  .tag-row:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,134,201,.28);transform:none}
+  .tag-row.dirty{border-color:var(--accent)}
+  .tag-row.flash{animation:flash .7s ease-out}
+  @keyframes flash{
+    0%{box-shadow:0 0 0 0 rgba(255,213,74,.85)}
+    100%{box-shadow:0 0 0 14px rgba(255,213,74,0)}
+  }
+  .tag-num{
+    flex:none;width:24px;height:24px;border-radius:50%;
+    background:linear-gradient(180deg,#3d97db,#2874b8);color:#fff;
+    display:grid;place-items:center;
+    font-size:11.5px;font-weight:700;
+    box-shadow:0 2px 6px rgba(46,134,201,.35);
+  }
+  .tag-input{
+    flex:1;min-width:0;background:transparent;border:0;outline:0;
+    color:#eef1f5;font-size:12.5px;font-family:inherit;
+  }
+  .tag-input::placeholder{color:#5d6875}
+
+  /* ---------- 科研飞镖靶 ---------- */
+  .idea-box{margin-top:12px}
+  .hits{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .hit-chip{
+    background:rgba(46,134,201,.16);border:1px solid rgba(46,134,201,.5);
+    border-radius:999px;padding:3px 10px;font-size:12px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .hit-chip b{color:#7db9e8}
+  .idea{
+    background:linear-gradient(180deg,rgba(255,213,74,.13),rgba(255,213,74,.06));
+    border:1px solid rgba(255,213,74,.40);
+    border-radius:14px;padding:13px 15px;font-size:13.5px;line-height:1.8;
+    box-shadow:0 6px 18px rgba(255,213,74,.06);
+  }
+  .idea::before{content:"💡 "}
+  .idea-box[hidden]{display:none}
+
+  /* ---------- 底部：规则玩法 + 榜单 ---------- */
+  .panels{
+    display:grid;grid-template-columns:minmax(340px,5fr) 7fr;gap:20px;
+    width:100%;max-width:1120px;margin-top:28px;align-items:start;
+    animation:rise .55s .24s ease both;
+  }
+
+  .rules{list-style:none}
+  .rules li{
+    display:flex;gap:10px;align-items:center;
+    padding:8px 0;font-size:13px;color:#cdd5df;
+    border-bottom:1px dashed rgba(255,255,255,.08);
+  }
+  .rules li:last-child{border-bottom:0}
+  .rchip{
+    flex:none;width:46px;height:24px;border-radius:6px;
+    display:grid;place-items:center;
+    font-size:11px;font-weight:700;color:#fff;
+    text-shadow:0 1px 2px rgba(0,0,0,.55);
+    box-shadow:inset 0 -2px 4px rgba(0,0,0,.25), 0 2px 5px rgba(0,0,0,.3);
+  }
+  .rules b{color:#eef1f5}
+  .note{margin-top:10px;font-size:12px;color:#8b96a3;line-height:1.7}
+
+  .games{list-style:none;display:flex;flex-direction:column;gap:12px}
+  .games li{
+    font-size:12.5px;color:#aeb8c4;line-height:1.7;
+    border-left:2px solid rgba(46,134,201,.4);padding-left:11px;
+  }
+  .games b{display:block;color:#eef1f5;font-size:13px;margin-bottom:2px}
+  .games b .en{color:#6b7684;font-weight:400;font-size:11.5px}
+
+  /* ---------- 积分榜单 ---------- */
+  .lb-form{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .lb-form input{
+    background:rgba(0,0,0,.30);border:1px solid rgba(255,255,255,.14);
+    border-radius:9px;padding:7px 11px;color:#eef1f5;
+    font-size:13px;font-family:inherit;outline:0;
+    transition:border-color .15s,box-shadow .15s;
+  }
+  .lb-form input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,134,201,.22)}
+  #lbName{flex:1 1 130px;min-width:0}
+  #lbScore{width:130px}
+  .lb-table{width:100%;border-collapse:collapse;font-size:13px}
+  .lb-table th,.lb-table td{
+    padding:8px 9px;text-align:left;
+    border-bottom:1px solid rgba(255,255,255,.07);
+  }
+  .lb-table th{
+    font-size:11px;color:#8b96a3;font-weight:600;white-space:nowrap;
+    letter-spacing:.06em;text-transform:uppercase;
+  }
+  .p-row{cursor:pointer;transition:background .12s}
+  .p-row:nth-child(even){background:rgba(255,255,255,.022)}
+  .p-row:hover{background:rgba(46,134,201,.09)}
+  .rank{white-space:nowrap;font-size:15px}
+  .p-name{font-weight:600}
+  .h-row td{background:rgba(0,0,0,.30);padding:8px 10px}
+  .hist{display:flex;flex-wrap:wrap;gap:6px}
+  .hist-item{
+    display:inline-flex;align-items:center;gap:5px;
+    background:rgba(255,255,255,.09);border-radius:999px;
+    padding:2px 6px 2px 10px;font-size:12px;
+  }
+  .hist-item .x{padding:0 4px;font-size:11px}
+  .x{
+    background:none;border:0;color:#8b96a3;cursor:pointer;
+    font-size:13px;padding:2px 6px;border-radius:6px;
+  }
+  .x:hover{color:#ff6b5e;background:rgba(220,60,50,.15)}
+  .empty td{text-align:center;color:#6b7684;padding:22px 0;font-size:12.5px}
+
+  footer{margin-top:34px;font-size:12px;color:#6f7a88;text-align:center;letter-spacing:.03em}
+  footer a{color:#8fb4d8;text-decoration:none}
+  footer a:hover{text-decoration:underline}
+
+  #toast{
+    position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);
+    background:rgba(18,24,31,.92);border:1px solid rgba(255,255,255,.20);
+    backdrop-filter:blur(10px);
+    box-shadow:0 10px 30px rgba(0,0,0,.5);
+    padding:9px 20px;border-radius:999px;font-size:13px;z-index:50;
+    opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* ---------- 响应式 ---------- */
+  @media (max-width:1080px){
+    .layout{flex-direction:column;align-items:center}
+    .board-col{width:min(94vw,640px);flex:none}
+    .side-col{flex:none;width:min(94vw,640px)}
+    .panels{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a class="brand" href="https://fact-lab.hkust.edu.hk/" target="_blank" rel="noopener">
+    <img src="fact-lab-logo.svg" alt="JC STEM FACT Lab @ HKUST">
+  </a>
+  <h1><img class="cube" src="fact-icon.png" alt="FACT Lab">FACT-Lab，数字飞镖靶</h1>
+  <p class="hint">标记模式下点击靶面放置红蓝双方的飞镖（各 3 镖），得分可记入榜单，命中 Topic 还能拼出科研 Idea。</p>
+</header>
+
+<div class="layout">
+  <section class="board-col">
+    <div class="board-wrap">
+    <div class="board-glow"></div>
+      <svg class="board marking" id="board" viewBox="0 0 1000 1000" aria-label="飞镖靶"></svg>
+    </div>
+
+    <div class="card" style="margin-top:18px">
+      <h2>🎯 掷镖标记 <span class="tag-mini">红 / 蓝双方各 3 镖</span></h2>
+      <label class="mode-line">
+        <input type="checkbox" id="markMode" checked>
+        标记模式：点击靶面放置飞镖（关闭后，点击数字可编辑标签）
+      </label>
+      <div class="turn-line" id="turnLine"></div>
+      <div class="side-row">
+        <span class="side-dot red"></span><b>红方</b>
+        <span class="side-darts" id="redDarts"></span>
+        <span class="side-total" id="redTotal">0</span>
+      </div>
+      <div class="side-row">
+        <span class="side-dot blue"></span><b>蓝方</b>
+        <span class="side-darts" id="blueDarts"></span>
+        <span class="side-total" id="blueTotal">0</span>
+      </div>
+      <div class="mark-actions">
+        <button class="btn sm" id="btnUndo">↩ 撤销上一镖</button>
+        <button class="btn sm danger" id="btnReset">重开一局</button>
+      </div>
+      <div class="link-row">
+        <input id="markName" placeholder="玩家姓名（用于榜单）" maxlength="12" autocomplete="off">
+        <button class="btn sm primary" id="recRed">红方 → 榜单</button>
+        <button class="btn sm primary" id="recBlue">蓝方 → 榜单</button>
+      </div>
+      <div class="link-row">
+        <button class="btn sm" id="ideaRed">🔬 红方 3 镖 → 科研 Idea</button>
+        <button class="btn sm" id="ideaBlue">🔬 蓝方 3 镖 → 科研 Idea</button>
+      </div>
+    </div>
+  </section>
+
+  <aside class="side-col">
+    <div class="card">
+      <h2>🏷️ 数字标签 <span class="tag-mini">每个数字 = 一个科研 Topic</span></h2>
+      <div class="tag-grid" id="tagGrid"></div>
+      <div class="card-foot">
+        <span class="stat" id="status"></span>
+        <span class="foot-btns">
+          <button class="btn sm" id="btnExport">导出 JSON</button>
+          <button class="btn sm danger" id="btnClear">清空</button>
+          <button class="btn sm primary" id="btnSave">保存</button>
+        </span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔬 科研飞镖靶 <span class="tag-mini">Just for Fun</span></h2>
+      <p class="note" style="margin:0 0 10px">
+        掷出 3 支飞镖，随机命中 3 个数字对应的科研 Topic（即上方可编辑的标签），拼出一个奇妙的科研 Idea；也可以用左侧标记的实战镖位来生成。
+      </p>
+      <button class="btn primary" id="btnThrow" style="width:100%">🎯 随机掷 3 镖，生成 Idea</button>
+      <div class="idea-box" id="ideaBox" hidden>
+        <div class="hits" id="hits"></div>
+        <div class="idea" id="ideaText"></div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<section class="panels">
+  <div class="card">
+    <h2>🎯 记分规则</h2>
+    <ul class="rules">
+      <li><span class="rchip" style="background:linear-gradient(90deg,#efe9da 50%,#2e86c9 50%)">单区</span>
+          <div><b>单区 ×1</b>：内 / 外两个大扇区，按所在数字计分</div></li>
+      <li><span class="rchip" style="background:#c0392b">×2</span>
+          <div><b>双倍区</b>：最外圈红色细环，扇区数字 ×2</div></li>
+      <li><span class="rchip" style="background:#a93226">×3</span>
+          <div><b>三倍区</b>：中段红色细环，扇区数字 ×3（单镖最高 60 分）</div></li>
+      <li><span class="rchip" style="background:#2e86c9">25</span>
+          <div><b>外牛眼</b>：蓝色圆环，固定 25 分</div></li>
+      <li><span class="rchip" style="background:#c0392b">50</span>
+          <div><b>内牛眼</b>：红色圆心，固定 50 分</div></li>
+      <li><span class="rchip" style="background:#24282e">0</span>
+          <div><b>脱靶</b>：未命中计分区（含黑色外环），计 0 分</div></li>
+    </ul>
+    <p class="note">每轮投掷 3 镖，单轮满分 180（3 × 三倍 20）。</p>
+
+    <h2 style="margin-top:20px">🕹️ 经典计分玩法</h2>
+    <ul class="games">
+      <li><b>01 赛制 <span class="en">301 / 501</span></b>
+          最经典的正式赛制。从 301 或 501 分起倒扣，先精确归零者胜；最后一镖必须命中双倍区（双倍出局）。若扣成负数或剩 1 分则「爆分」，本轮得分无效。</li>
+      <li><b>板球 <span class="en">Cricket</span></b>
+          只使用 15–20 与牛眼。同一数字累计命中 3 次（双倍 = 2 次、三倍 = 3 次）即「关闭」该数字；趁对手未关闭时继续命中可以刷分。关闭全部数字且总分领先者胜。</li>
+      <li><b>绕钟 <span class="en">Around the Clock</span></b>
+          从 1 到 20 按顺序依次命中目标数字，最后命中牛眼收尾。可单人计时、可多人竞速，练准度首选。</li>
+      <li><b>加分赛 <span class="en">Count-Up</span></b>
+          固定轮数（如 8 轮）纯累计总分，无战术、纯拼输出 —— 掷镖标记的双方总分可直接「记入榜单」参与排行。</li>
+      <li><b>减半 <span class="en">Halve It</span></b>
+          每轮指定一个目标数字，该轮未能命中目标则总分减半。心态与准度的双重考验。</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>🏆 积分榜单</h2>
+    <form class="lb-form" id="lbForm">
+      <input id="lbName" placeholder="玩家姓名" maxlength="12" autocomplete="off" required>
+      <input id="lbScore" type="number" min="0" max="180" step="1" placeholder="本轮得分 (0–180)" required>
+      <button class="btn primary sm" type="submit">录入</button>
+    </form>
+    <table class="lb-table">
+      <thead>
+        <tr><th>#</th><th>玩家</th><th>总分</th><th>轮数</th><th>最高</th><th>均分</th><th></th></tr>
+      </thead>
+      <tbody id="lbBody"></tbody>
+    </table>
+    <div class="card-foot">
+      <span class="stat" id="lbStatus"></span>
+      <span class="foot-btns">
+        <button class="btn sm" id="lbExport">导出 JSON</button>
+        <button class="btn sm danger" id="lbClear">清空榜单</button>
+      </span>
+    </div>
+  </div>
+</section>
+
+<footer>
+  JC STEM Lab of Future Advanced Computing Technologies @ HKUST ·
+  <a href="https://fact-lab.hkust.edu.hk/" target="_blank" rel="noopener">fact-lab.hkust.edu.hk</a>
+</footer>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+
+/* ================= 常量 ================= */
+const NUMBERS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5]; // 顺时针，自顶部
+const C = 500;
+const R = {
+  rimOut: 488, rimIn: 402,
+  dblOut: 388, dblIn: 368,
+  trpOut: 253, trpIn: 233,
+  bullOut: 42, bullIn: 19,
+  num: 445
+};
+const COLORS = { blue:"#2e86c9", cream:"#efe9da", red:"#c0392b" };
+const SIDES = {
+  red:  { label:"红方", color:"#e74c3c" },
+  blue: { label:"蓝方", color:"#3498db" }
+};
+const TAG_KEY = "dartboard-tags-v1";
+const LB_KEY  = "dartboard-lb-v1";
+
+// 默认科研 Topic（首次打开、无本地保存时载入）
+const DEFAULT_TOPICS = {
+  1:"GPU 集群调度", 2:"大模型推理加速", 3:"存算一体架构", 4:"边缘智能",
+  5:"联邦学习", 6:"RISC-V 处理器", 7:"近数据计算", 8:"图神经网络系统",
+  9:"向量数据库", 10:"模型量化压缩", 11:"AI 编译器", 12:"RDMA 高性能网络",
+  13:"芯粒 Chiplet 集成", 14:"光计算", 15:"AI for Science", 16:"机器人具身智能",
+  17:"稀疏计算加速", 18:"智能缓存系统", 19:"分布式训练框架", 20:"隐私计算"
+};
+
+const uid = () => (crypto.randomUUID ? crypto.randomUUID()
+  : "id" + Date.now().toString(36) + Math.random().toString(36).slice(2, 8));
+
+/* ================= 几何工具 ================= */
+const rad = d => d * Math.PI / 180;
+const pt  = (r, deg) => [C + r * Math.cos(rad(deg)), C + r * Math.sin(rad(deg))];
+const f   = n => n.toFixed(2);
+
+function wedge(rOut, rIn, a1, a2){
+  const [x1,y1] = pt(rOut,a1), [x2,y2] = pt(rOut,a2);
+  const [x3,y3] = pt(rIn, a2), [x4,y4] = pt(rIn, a1);
+  return `M${f(x1)} ${f(y1)} A${rOut} ${rOut} 0 0 1 ${f(x2)} ${f(y2)} ` +
+         `L${f(x3)} ${f(y3)} A${rIn} ${rIn} 0 0 0 ${f(x4)} ${f(y4)} Z`;
+}
+
+/** 由坐标判定命中区域：返回 {n, zone, mult, score, miss?, bull?} */
+function locate(x, y){
+  const dx = x - C, dy = y - C;
+  const r = Math.hypot(dx, dy);
+  const ang = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+  const n = NUMBERS[Math.floor(((ang + 90 + 9) % 360) / 18)];
+  if (r <= R.bullIn)  return { n, zone:"内牛眼", mult:0, score:50, bull:true };
+  if (r <= R.bullOut) return { n, zone:"外牛眼", mult:0, score:25, bull:true };
+  if (r > R.dblOut)   return { n, zone:"脱靶",   mult:0, score:0,  miss:true };
+  if (r >= R.dblIn)   return { n, zone:"双倍区", mult:2, score:n*2 };
+  if (r >= R.trpOut)  return { n, zone:"单区",   mult:1, score:n   };
+  if (r >= R.trpIn)   return { n, zone:"三倍区", mult:3, score:n*3 };
+  return                     { n, zone:"单区",   mult:1, score:n   };
+}
+
+/* ================= 构建 SVG 靶盘 ================= */
+function buildBoard(){
+  const defs = `
+  <defs>
+    <radialGradient id="rimGrad" cx="50%" cy="36%" r="78%">
+      <stop offset="0%"  stop-color="#484e56"/>
+      <stop offset="45%" stop-color="#25282d"/>
+      <stop offset="100%" stop-color="#0b0d10"/>
+    </radialGradient>
+    <radialGradient id="shade" cx="50%" cy="50%" r="50%">
+      <stop offset="55%"  stop-color="rgba(0,0,0,0)"/>
+      <stop offset="92%"  stop-color="rgba(0,0,0,.16)"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,.30)"/>
+    </radialGradient>
+    <pattern id="holes" width="13" height="11.26" patternUnits="userSpaceOnUse">
+      <circle cx="3.25" cy="2.815" r="2.4" fill="rgba(0,0,0,.20)"/>
+      <circle cx="9.75" cy="8.445" r="2.4" fill="rgba(0,0,0,.20)"/>
+    </pattern>
+  </defs>`;
+
+  const s = [defs];
+  s.push(`<circle cx="${C}" cy="${C}" r="${R.rimOut}" fill="url(#rimGrad)"/>`);
+  s.push(`<circle cx="${C}" cy="${C}" r="${R.rimIn}" fill="#111417"/>`);
+  s.push(`<circle cx="${C}" cy="${C}" r="${R.dblOut}" fill="#0c0e11"/>`);
+
+  for (let i = 0; i < 20; i++){
+    const a1 = -90 + i*18 - 9, a2 = -90 + i*18 + 9;
+    const single = i % 2 === 0 ? COLORS.cream : COLORS.blue;
+    s.push(`<path class="wedge" d="${wedge(R.dblIn,  R.trpOut, a1, a2)}" fill="${single}"/>`);
+    s.push(`<path class="wedge" d="${wedge(R.dblOut, R.dblIn,  a1, a2)}" fill="${COLORS.red}"/>`);
+    s.push(`<path class="wedge" d="${wedge(R.trpOut, R.trpIn,  a1, a2)}" fill="${COLORS.red}"/>`);
+    s.push(`<path class="wedge" d="${wedge(R.trpIn,  R.bullOut,a1, a2)}" fill="${single}"/>`);
+  }
+
+  s.push(`<circle class="bull" cx="${C}" cy="${C}" r="${R.bullOut}" fill="${COLORS.blue}"/>`);
+  s.push(`<circle class="bull" cx="${C}" cy="${C}" r="${R.bullIn}"  fill="${COLORS.red}"/>`);
+
+  s.push(`<circle cx="${C}" cy="${C}" r="${R.dblOut}" fill="url(#holes)"/>`);
+  s.push(`<path fill-rule="evenodd" fill="url(#holes)" opacity=".5" d="
+    M ${C-R.rimOut} ${C} a ${R.rimOut} ${R.rimOut} 0 1 0 ${R.rimOut*2} 0
+                      a ${R.rimOut} ${R.rimOut} 0 1 0 ${-R.rimOut*2} 0
+    M ${C-R.rimIn} ${C} a ${R.rimIn} ${R.rimIn} 0 1 0 ${R.rimIn*2} 0
+                      a ${R.rimIn} ${R.rimIn} 0 1 0 ${-R.rimIn*2} 0"/>`);
+  s.push(`<circle cx="${C}" cy="${C}" r="${R.dblOut}" fill="url(#shade)" pointer-events="none"/>`);
+
+  NUMBERS.forEach((n, i) => {
+    const [x,y] = pt(R.num, -90 + i*18);
+    s.push(`<g class="num" data-n="${n}">
+      <title>点击编辑 ${n} 的标签</title>
+      <circle class="pod" cx="${f(x)}" cy="${f(y)}" r="34"/>
+      <text class="numtxt" x="${f(x)}" y="${f(y+2)}">${n}</text>
+    </g>`);
+  });
+
+  s.push(`<g id="dartLayer"></g>`); // 随机掷镖标记层
+  s.push(`<g id="markLayer"></g>`); // 手动标记红蓝飞镖层（最上层）
+
+  document.getElementById("board").innerHTML = s.join("");
+}
+
+/* ================= 通用小组件 ================= */
+const toastEl = document.getElementById("toast");
+let toastTimer = null;
+function toast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), 1800);
+}
+const esc = s => s.replace(/[&<>"']/g, ch =>
+  ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+
+/* ================= 数字标签 ================= */
+const statusEl = document.getElementById("status");
+
+function buildTagList(){
+  const grid = document.getElementById("tagGrid");
+  NUMBERS.forEach(n => {
+    const row = document.createElement("div");
+    row.className = "tag-row";
+    row.dataset.n = n;
+    row.innerHTML =
+      `<span class="tag-num">${n}</span>` +
+      `<input class="tag-input" data-n="${n}" maxlength="24" placeholder="未设置" aria-label="${n} 的标签">`;
+    grid.appendChild(row);
+  });
+}
+
+function collectTags(){
+  const obj = {};
+  document.querySelectorAll(".tag-input").forEach(inp => { obj[inp.dataset.n] = inp.value; });
+  return obj;
+}
+function applyTags(obj){
+  document.querySelectorAll(".tag-input").forEach(inp => { inp.value = obj[inp.dataset.n] ?? ""; });
+  document.querySelectorAll(".tag-row").forEach(r => r.classList.remove("dirty"));
+}
+function setStatus(text, dirty){
+  statusEl.textContent = text;
+  statusEl.classList.toggle("dirty", !!dirty);
+}
+function saveTags(){
+  localStorage.setItem(TAG_KEY, JSON.stringify(collectTags()));
+  document.querySelectorAll(".tag-row").forEach(r => r.classList.remove("dirty"));
+  setStatus("已保存 · " + new Date().toLocaleTimeString(), false);
+  toast("标签已保存到本地");
+}
+function loadTags(){
+  let obj = null;
+  try { obj = JSON.parse(localStorage.getItem(TAG_KEY) || "null"); } catch(e) {}
+  if (obj){
+    applyTags(obj);
+    setStatus("已加载本地保存的标签", false);
+  } else {
+    applyTags(DEFAULT_TOPICS); // 首次：载入默认科研 Topic（未保存，可编辑后保存）
+    setStatus("已载入默认科研 Topic，可自由编辑", false);
+  }
+}
+
+function focusTag(n){
+  const row = document.querySelector(`.tag-row[data-n="${n}"]`);
+  const inp = row && row.querySelector(".tag-input");
+  if (!inp) return;
+  row.scrollIntoView({behavior:"smooth", block:"nearest"});
+  row.classList.remove("flash"); void row.offsetWidth; row.classList.add("flash");
+  inp.focus(); inp.select();
+}
+
+function wireTags(){
+  document.getElementById("btnSave").addEventListener("click", saveTags);
+
+  document.getElementById("btnExport").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(collectTags(), null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "dartboard-tags.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  document.getElementById("btnClear").addEventListener("click", () => {
+    if (!confirm("确定清空全部 20 个标签并保存吗？")) return;
+    applyTags({});
+    saveTags();
+  });
+
+  document.querySelectorAll(".tag-input").forEach(inp => {
+    inp.addEventListener("input", () => {
+      inp.closest(".tag-row").classList.add("dirty");
+      setStatus("有未保存的修改", true);
+    });
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") inp.blur(); });
+  });
+
+  // 悬停标签行 ↔ 高亮盘面数字
+  document.querySelectorAll(".tag-row").forEach(row => {
+    const g = document.querySelector(`.num[data-n="${row.dataset.n}"]`);
+    row.addEventListener("mouseenter", () => g && g.classList.add("hl"));
+    row.addEventListener("mouseleave", () => g && g.classList.remove("hl"));
+  });
+}
+
+/* ================= 科研飞镖靶（Idea 生成） ================= */
+const IDEA_TEMPLATES = [
+  (a,b,c) => `基于「${b}」的「${a}」新方法，并在「${c}」场景中落地验证。`,
+  (a,b,c) => `面向「${c}」的「${a}」×「${b}」联合优化框架。`,
+  (a,b,c) => `用「${b}」重新审视「${a}」的老问题：以「${c}」作为实验平台。`,
+  (a,b,c) => `「${a}」+「${b}」+「${c}」——下一代交叉方向？先写个 Proposal 再说。`,
+  (a,b,c) => `当「${a}」遇上「${b}」，顺便解决「${c}」里长期悬而未决的难题。`,
+  (a,b,c) => `把「${a}」的思想搬进「${b}」，在「${c}」上跑出 SOTA。`
+];
+
+function topicOf(n){
+  const inp = document.querySelector(`.tag-input[data-n="${n}"]`);
+  const v = inp && inp.value.trim();
+  return v || `Topic #${n}（未设置）`;
+}
+
+/** 用 3 个数字生成 Idea 并展示 */
+function showIdea(nums){
+  const topics = nums.map(topicOf);
+  const tpl = IDEA_TEMPLATES[Math.floor(Math.random() * IDEA_TEMPLATES.length)];
+  document.getElementById("hits").innerHTML = nums.map((n, i) =>
+    `<span class="hit-chip"><b>${n}</b> · ${esc(topics[i])}</span>`).join("");
+  document.getElementById("ideaText").textContent = tpl(topics[0], topics[1], topics[2]);
+  const box = document.getElementById("ideaBox");
+  box.hidden = false;
+  box.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+
+/** 随机掷 3 镖（画 📌 标记 + 生成 Idea） */
+function throwDarts(){
+  const pool = [...NUMBERS];
+  const picks = [];
+  for (let i = 0; i < 3; i++){
+    picks.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+  }
+
+  const layer = document.getElementById("dartLayer");
+  layer.innerHTML = picks.map((n, i) => {
+    const idx = NUMBERS.indexOf(n);
+    const ang = -90 + idx * 18 + (Math.random() * 14 - 7);   // 扇区中心 ±7°
+    // 落点随机取内单区 [bullOut+12, trpIn-12] 或外单区 [trpOut+12, dblIn-12]
+    const rOut = Math.random() < 0.5
+      ? R.bullOut + 12 + Math.random() * (R.trpIn - R.bullOut - 24)
+      : R.trpOut  + 12 + Math.random() * (R.dblIn - R.trpOut - 24);
+    const [x, y] = pt(rOut, ang);
+    return `<g transform="translate(${f(x)},${f(y)})">
+      <g class="dart" style="animation-delay:${i * 0.18}s">
+        <circle r="17" fill="rgba(0,0,0,.32)"/>
+        <text y="1" font-size="24" text-anchor="middle" dominant-baseline="central">📌</text>
+      </g>
+    </g>`;
+  }).join("");
+
+  showIdea(picks);
+}
+
+/* ================= 掷镖标记（红蓝双方各 3 镖） ================= */
+let darts = [];  // [{side, x, y, n, zone, mult, score, miss?, bull?}]
+
+const sideDarts  = side => darts.filter(d => d.side === side);
+const sideTotal  = side => sideDarts(side).reduce((a, d) => a + d.score, 0);
+
+function nextSide(){
+  const rc = sideDarts("red").length, bc = sideDarts("blue").length;
+  if (rc >= 3) return "blue";
+  if (bc >= 3) return "red";
+  return darts.length % 2 === 0 ? "red" : "blue";
+}
+
+function zoneLabel(d){
+  if (d.miss) return "脱靶";
+  if (d.bull) return d.zone;
+  return (d.mult === 3 ? "T" : d.mult === 2 ? "D" : "") + d.n;
+}
+
+function renderMarks(){
+  const layer = document.getElementById("markLayer");
+  layer.innerHTML = darts.map(d => {
+    const idx = sideDarts(d.side).indexOf(d) + 1;
+    return `<g transform="translate(${f(d.x)},${f(d.y)})">
+      <g class="dart">
+        <circle r="16" fill="${SIDES[d.side].color}" stroke="#fff" stroke-width="2.5"/>
+        <text y="1" font-size="15" font-weight="700" fill="#fff"
+              text-anchor="middle" dominant-baseline="central">${idx}</text>
+      </g>
+    </g>`;
+  }).join("");
+}
+
+function updateMarkPanel(){
+  const rc = sideDarts("red").length, bc = sideDarts("blue").length;
+
+  for (const side of ["red", "blue"]){
+    document.getElementById(side + "Darts").innerHTML =
+      sideDarts(side).map(d =>
+        `<span class="dchip ${side}" title="${d.zone}">${zoneLabel(d)} <b>${d.score}</b></span>`
+      ).join("") || `<span class="none">—</span>`;
+    document.getElementById(side + "Total").textContent = sideTotal(side);
+  }
+
+  const tl = document.getElementById("turnLine");
+  if (darts.length >= 6){
+    const r = sideTotal("red"), b = sideTotal("blue");
+    const res = r === b ? "平局！" : (r > b ? "红方胜！" : "蓝方胜！");
+    tl.innerHTML = `本局结束 · 红方 <b>${r}</b> : <b>${b}</b> 蓝方 — <span class="win"><b>${res}</b></span>`;
+  } else {
+    const side = nextSide();
+    const c = sideDarts(side).length;
+    const dots = darts.map(d => `<i class="dot ${d.side}"></i>`).join("");
+    tl.innerHTML = `当前：<span class="side-dot ${side}"></span><b>${SIDES[side].label}</b> 第 ${c + 1} 镖 <span class="dots">${dots}</span>`;
+  }
+
+  const recR = document.getElementById("recRed"), recB = document.getElementById("recBlue");
+  recR.textContent = `红方 ${sideTotal("red")} 分 → 榜单`;
+  recB.textContent = `蓝方 ${sideTotal("blue")} 分 → 榜单`;
+  recR.disabled = rc === 0;
+  recB.disabled = bc === 0;
+  document.getElementById("btnUndo").disabled = darts.length === 0;
+}
+
+function wireMarking(){
+  const svgEl  = document.getElementById("board");
+  const modeCb = document.getElementById("markMode");
+
+  modeCb.addEventListener("change", () => {
+    svgEl.classList.toggle("marking", modeCb.checked);
+  });
+
+  // 统一点击处理：标记模式 → 放镖；否则点击数字 → 编辑标签
+  svgEl.addEventListener("click", e => {
+    if (modeCb.checked){
+      if (darts.length >= 6){
+        toast("本局 6 镖已投完，点「重开一局」再来");
+        return;
+      }
+      const rect = svgEl.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width  * 1000;
+      const y = (e.clientY - rect.top)  / rect.height * 1000;
+      const side = nextSide();
+      darts.push({ side, x, y, ...locate(x, y) });
+      renderMarks();
+      updateMarkPanel();
+      return;
+    }
+    const g = e.target.closest(".num");
+    if (g) focusTag(g.dataset.n);
+  });
+
+  document.getElementById("btnUndo").addEventListener("click", () => {
+    if (!darts.length) return;
+    darts.pop();
+    renderMarks();
+    updateMarkPanel();
+  });
+
+  document.getElementById("btnReset").addEventListener("click", () => {
+    darts = [];
+    renderMarks();
+    updateMarkPanel();
+  });
+
+  // 联动 1：记入榜单（加分赛）
+  for (const side of ["red", "blue"]){
+    document.getElementById(side === "red" ? "recRed" : "recBlue").addEventListener("click", () => {
+      const name = document.getElementById("markName").value.trim();
+      if (!name){ toast("请先填写玩家姓名"); document.getElementById("markName").focus(); return; }
+      if (addScore(name, sideTotal(side))) document.getElementById("markName").value = "";
+    });
+  }
+
+  // 联动 2：用实战镖位生成科研 Idea
+  for (const side of ["red", "blue"]){
+    document.getElementById(side === "red" ? "ideaRed" : "ideaBlue").addEventListener("click", () => {
+      const nums = [...new Set(sideDarts(side).filter(d => d.mult > 0).map(d => d.n))];
+      if (!nums.length){
+        toast(`${SIDES[side].label}还没有命中计分扇区（单/双/三倍区）`);
+        return;
+      }
+      const pool = NUMBERS.filter(n => !nums.includes(n));
+      while (nums.length < 3){
+        nums.push(pool.splice(Math.floor(Math.random() * pool.length), 1)[0]);
+      }
+      showIdea(nums.slice(0, 3));
+    });
+  }
+
+  updateMarkPanel();
+}
+
+/* ================= 积分榜单 ================= */
+let lb = [];                 // [{id, name, created, scores:[{v,t}]}]
+const expanded = new Set();  // 展开历史记录的玩家 id
+
+const lbBody   = document.getElementById("lbBody");
+const lbStatus = document.getElementById("lbStatus");
+
+const totalOf  = p => p.scores.reduce((a, s) => a + s.v, 0);
+const maxOf    = p => p.scores.reduce((a, s) => Math.max(a, s.v), 0);
+
+function loadLB(){
+  try { lb = JSON.parse(localStorage.getItem(LB_KEY)) || []; } catch(e) { lb = []; }
+}
+function persistLB(){
+  localStorage.setItem(LB_KEY, JSON.stringify(lb));
+  renderLB();
+}
+
+/** 录入一条得分（供榜单表单与掷镖标记共用），返回是否成功 */
+function addScore(name, v){
+  name = name.trim();
+  if (!name){ toast("请填写玩家姓名"); return false; }
+  if (!Number.isInteger(v) || v < 0 || v > 180){
+    alert("得分须为 0–180 的整数");
+    return false;
+  }
+  let p = lb.find(p => p.name.toLowerCase() === name.toLowerCase());
+  if (!p){
+    p = { id: uid(), name, created: Date.now(), scores: [] };
+    lb.push(p);
+  }
+  p.scores.push({ v, t: Date.now() });
+  persistLB();
+  toast(`已录入：${p.name} +${v}`);
+  return true;
+}
+
+function renderLB(){
+  const recCount = lb.reduce((a, p) => a + p.scores.length, 0);
+  lbStatus.textContent = lb.length
+    ? `${lb.length} 名玩家 · ${recCount} 条记录 · 已自动保存`
+    : "";
+
+  if (!lb.length){
+    lbBody.innerHTML = `<tr class="empty"><td colspan="7">暂无记录，录入第一轮成绩吧</td></tr>`;
+    return;
+  }
+
+  const sorted = [...lb].sort((a, b) => totalOf(b) - totalOf(a) || a.created - b.created);
+  const medals = ["🥇", "🥈", "🥉"];
+  const rows = [];
+
+  sorted.forEach((p, i) => {
+    const t = totalOf(p), m = p.scores.length;
+    rows.push(`<tr class="p-row" data-id="${p.id}" title="点击查看历史记录">
+      <td class="rank">${medals[i] || (i + 1)}</td>
+      <td class="p-name">${esc(p.name)}</td>
+      <td><b>${t}</b></td>
+      <td>${m}</td>
+      <td>${maxOf(p)}</td>
+      <td>${(t / m).toFixed(1)}</td>
+      <td><button class="x" data-act="del-player" title="删除玩家">✕</button></td>
+    </tr>`);
+
+    if (expanded.has(p.id)){
+      const items = p.scores.map((s, j) =>
+        `<span class="hist-item" title="${new Date(s.t).toLocaleString()}">${s.v}
+           <button class="x" data-act="del-rec" data-j="${j}" title="删除该记录">✕</button>
+         </span>`).join("");
+      rows.push(`<tr class="h-row" data-id="${p.id}">
+        <td></td><td colspan="6"><div class="hist">${items || "无记录"}</div></td>
+      </tr>`);
+    }
+  });
+
+  lbBody.innerHTML = rows.join("");
+}
+
+function wireLB(){
+  const form   = document.getElementById("lbForm");
+  const nameI  = document.getElementById("lbName");
+  const scoreI = document.getElementById("lbScore");
+
+  form.addEventListener("submit", e => {
+    e.preventDefault();
+    if (addScore(nameI.value, Number(scoreI.value))){
+      scoreI.value = "";
+      scoreI.focus();
+    }
+  });
+
+  // 行点击展开 / 删除（事件委托）
+  lbBody.addEventListener("click", e => {
+    const tr = e.target.closest("tr[data-id]");
+    if (!tr) return;
+    const id = tr.dataset.id;
+    const p = lb.find(p => p.id === id);
+    if (!p) return;
+
+    const actBtn = e.target.closest("[data-act]");
+    if (actBtn){
+      const act = actBtn.dataset.act;
+      if (act === "del-player"){
+        if (confirm(`删除玩家「${p.name}」及其全部 ${p.scores.length} 条记录？`)){
+          lb = lb.filter(q => q.id !== id);
+          expanded.delete(id);
+          persistLB();
+        }
+      } else if (act === "del-rec"){
+        p.scores.splice(Number(actBtn.dataset.j), 1);
+        persistLB();
+      }
+      return;
+    }
+    expanded.has(id) ? expanded.delete(id) : expanded.add(id);
+    renderLB();
+  });
+
+  document.getElementById("lbExport").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify(lb, null, 2)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "dartboard-leaderboard.json";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  document.getElementById("lbClear").addEventListener("click", () => {
+    if (!lb.length) return;
+    if (!confirm("确定清空整个榜单吗？此操作不可撤销。")) return;
+    lb = [];
+    expanded.clear();
+    persistLB();
+  });
+}
+
+/* ================= 启动 ================= */
+buildBoard();
+buildTagList();
+wireTags();
+loadTags();
+loadLB();
+renderLB();
+wireLB();
+wireMarking();
+document.getElementById("btnThrow").addEventListener("click", throwDarts);
+</script>
+</body>
+</html>
